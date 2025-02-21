@@ -20,6 +20,7 @@ Resumo das principais características do projeto:
 
 
 ==> Uso de Ollama
+    - Download para uso: https://ollama.com/download
     - Se trata de uma ferramenta que deve ser instalada na máquina, ela permite executar diversos tipos de LLMs, inclusive a llama3.2.
     - Página do ollama: https://ollama.com/search
     - Link GitHub com informações de instalação e comandos: https://github.com/ollama/ollama-python/blob/main/README.md
