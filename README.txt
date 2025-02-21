@@ -34,7 +34,6 @@ Resumo das principais características do projeto:
     - rodar no cmd: ollama run llama3.2
     - rodar a classe ChatBot.py
 
-
 ==> RAG
     - Documentação da langchain: https://python.langchain.com/docs/tutorials/rag/
     - Carregar documentos: https://python.langchain.com/docs/concepts/document_loaders/
