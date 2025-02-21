@@ -1,0 +1,4 @@
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT="https://api.smith.langchain.com"
+LANGSMITH_API_KEY="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"
+LANGSMITH_PROJECT="pr-another-hearth-47"
