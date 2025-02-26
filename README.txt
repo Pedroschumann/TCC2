@@ -15,6 +15,8 @@ Resumo das principais características do projeto:
     - pip install langchain-community
     - pip install langchain-ollama
     - pip install beautifulsoup4
+    - pip install faiss-cpu
+    - pip install -U langchain langchain-ollama
 
 
 ==> Utilização da LLM llama3.2:
