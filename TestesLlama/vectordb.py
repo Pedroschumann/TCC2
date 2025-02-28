@@ -11,8 +11,11 @@ def url_to_retriver(url):
     loader = WebBaseLoader(url, requests_kwargs={"headers": headers})
     docs = loader.load()
 
+    for doc in docs:
+        print(doc.page_content)
+
     #embeddings = OpenAIEmbeddings()
-    embeddings = OllamaEmbeddings(model="llama3.2:3b")
+    embeddings = OllamaEmbeddings(model="llama3.2:1b")
 
     text_splitter = RecursiveCharacterTextSplitter()
     documents = text_splitter.split_documents(docs) # da pra passar PDF, descrição de vídeos, textos de web scraping

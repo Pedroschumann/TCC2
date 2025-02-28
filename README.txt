@@ -27,6 +27,9 @@ Resumo das principais características do projeto:
     Comandos:
     - ollama run llama3.2
 
+    -> baixar llama3.2:1b
+    - ollama run llama3.2:1b
+
 
 ==> Uso de Ollama
     - Download para uso: https://ollama.com/download
