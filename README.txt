@@ -4,7 +4,7 @@ Resumo das principais características do projeto:
 
 ==> Configurar Ambiente:
     -> Criar ambiente virtual no projeto:
-        - python -m venv vend (Isso vai criar o ambiente virtual e a pasta "vend" na hierarquia do projeto com todas as bibliotecas)
+        - python -m venv venv (Isso vai criar o ambiente virtual e a pasta "vend" na hierarquia do projeto com todas as bibliotecas)
     -> Entrar na máquina virtual:
         .\venv\Scripts\Activate
     -> Caso dê erro pra rodar o comando acima, rodar o seguinte comando:
