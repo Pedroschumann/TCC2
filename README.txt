@@ -38,6 +38,8 @@ Resumo das principais características do projeto:
     - Link GitHub com informações de instalação e comandos: https://github.com/ollama/ollama-python/blob/main/README.md
     - Executável salvo na pasta "recursos" dentro desse diretório.
 
+    -> OllamaEmbeddings: https://python.langchain.com/api_reference/ollama/embeddings/langchain_ollama.embeddings.OllamaEmbeddings.html#langchain_ollama.embeddings.OllamaEmbeddings
+
 
 ==> langchain
     - site principal: https://www.langchain.com/
@@ -58,3 +60,11 @@ Resumo das principais características do projeto:
 
 ==> OpenAI
     - Link pra gerar API-keys: https://platform.openai.com/settings/proj_R7GdyiIHNaPNnxFtxWUkXNmP/api-keys
+
+
+==> Modelos de embeddings
+    -> Rank dos melhores modelos: https://huggingface.co/spaces/mteb/leaderboard
+    - legal-embeddings-br -> https://github.com/fabiolobato/legal-embeddings-br/tree/main
+    - gte-Qwen2-7B-instruct -> https://huggingface.co/Alibaba-NLP/gte-Qwen2-7B-instruct
+    - mxbai-incorporar-grande -> https://ollama.com/library/mxbai-embed-large
+        - ollama pull mxbai-embed-large

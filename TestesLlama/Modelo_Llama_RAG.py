@@ -1,33 +1,52 @@
-from langchain_core.prompts import ChatPromptTemplate # isso aqui é outra forma de criar prompt, pra ser mais humano igual o chat gpt
+from langchain_core.prompts import ChatPromptTemplate  # Criação de prompts estruturados
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
-from vectordb import url_to_retriver
-from langchain_community.llms import ollama
 from langchain_ollama import OllamaLLM
+from langchain_ollama import OllamaEmbeddings  # Transforma os textos em embeddings
+#from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import FAISS
 
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+# Carregar embeddings do modelo
+embeddings = OllamaEmbeddings(model="llama3.2:latest") #llama3.2:latest
 
+# Recuperar os dados do banco vetorial FAISS
+vectorstore = FAISS.load_local("DadosVetoriais", embeddings, allow_dangerous_deserialization=True)
+retriever = vectorstore.as_retriever()
 
-#https://pt.wikipedia.org/wiki/Oppenheimer_(filme)
-retriver = url_to_retriver('https://www.planalto.gov.br/ccivil_03/leis/l9492.htm')
+def perguntar(pergunta, retriever):
+    llm = OllamaLLM(model="llama3.2:latest", temperature=0.3)
 
-def perguntar(pergunta):
-    llm = OllamaLLM(model="llama3.2:1b", temperature=0.3)
+    # Prompt que direciona a LLM a usar apenas o contexto
+    prompt = ChatPromptTemplate.from_template(
+        """Baseie-se APENAS no seguinte contexto para responder à pergunta. Se não houver resposta no contexto, diga 'Não encontrado no contexto'. 
+        
+        Contexto:
+        {context}
+        
+        Pergunta: {input}
+        
+        Responda apenas com trechos do contexto acima, sem adicionar informações externas.
+        """
+    )
 
-    prompt = ChatPromptTemplate.from_template("""Responda a pergunta com base apenas no contexto:
-    {context}
-    Pergunta: {input}
-    """)
+    retrieved_docs = retriever.invoke(pergunta)
+    print("Documentos recuperados:", [doc.page_content for doc in retrieved_docs])
 
+    # Criando a cadeia que combina os documentos recuperados com o modelo de linguagem
     documents_chain = create_stuff_documents_chain(llm, prompt)
-    retriver_chain = create_retrieval_chain(retriver, documents_chain)
-    response = retriver_chain.invoke({"input":pergunta})
 
-    return response
+    # Criando a cadeia de recuperação (RAG)
+    retriever_chain = create_retrieval_chain(retriever, documents_chain)
 
+    # Fazendo a consulta
+    response = retriever_chain.invoke({"input": pergunta})
+
+    # Retornando a resposta correta (depende do formato de saída do modelo)
+    return response.get("answer", "Resposta não encontrada no contexto.")
 
 if __name__ == "__main__":
-    #response = perguntar("Quem pode fazer o cancelamento do registro de protesto além do Tabelião titular?")
-    #print(response['answer'])
-    print("Teste")
+    #resposta = perguntar("A publicação do nome dos juízes de plantão será divulgada em quantos dias antes do início do plantão? Em qual Art do código de normas consta essa informação?", retriever)
+    # A publicação do nome dos juízes de plantão será divulgada em quantos dias antes do início do plantão? Em qual Art do código de normas consta essa informação?
+    resposta = perguntar("É responsabilidade do juiz a fiscalização da correta alimentação do sistema informatizado disponibilizado pelo Poder Judiciário?", retriever)
+    print(resposta)
+
