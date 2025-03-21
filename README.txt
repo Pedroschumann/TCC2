@@ -71,7 +71,6 @@ Resumo das principais características do projeto:
 
 
 
-
 Perguntas testadas:
 -> A publicação do nome dos juízes de plantão será divulgada em quantos dias antes do início do plantão? Em qual Art do código de normas consta essa informação?
 -> É responsabilidade do juiz a fiscalização da correta alimentação do sistema informatizado disponibilizado pelo Poder Judiciário? Qual artigo menciona isso?
