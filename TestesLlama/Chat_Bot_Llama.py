@@ -1,71 +1,112 @@
+import requests
+from bs4 import BeautifulSoup
+import re
 import os
-from langchain_community.vectorstores import FAISS
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_ollama import OllamaEmbeddings
-from langchain_core.prompts import ChatPromptTemplate  # Criação de prompts estruturados
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
-from langchain_ollama import OllamaLLM
+from langchain.chains import RetrievalQA
+from langchain_ollama.llms import OllamaLLM
+from langchain_community.vectorstores import FAISS # armazena em um banco de dados vetorial
+from langchain_text_splitters import RecursiveCharacterTextSplitter # quebra o texto em pequenos chanks
+from langchain_huggingface import HuggingFaceEmbeddings
+os.environ['USER_AGENT'] = 'myagent'
 
+def extrairTexto(link, headers):
+    requisicao = requests.get(link, headers=headers)
+    print(requisicao)
 
-def perguntar(pergunta, retriever):
-    llm = OllamaLLM(model="llama3.2:latest", temperature=0.0)  # Verifique se o modelo está correto
+    textoRetorno = ""
 
-    # Prompt que direciona a LLM a usar apenas o contexto
-    prompt = ChatPromptTemplate.from_template(
-        """Baseie-se APENAS no seguinte contexto para responder à pergunta. Se não houver resposta no contexto, diga 'Não encontrado no contexto'. 
+    # Verificando se a requisição foi bem-sucedida
+    if requisicao.status_code == 200:
+        site = BeautifulSoup(requisicao.text, "html.parser")
+
+        # Filtrando os parágrafos que não possuem a tag <strike> dentro deles
+        paragrafos_filtrados = []
+
+        for p in site.find_all("p"):
+            if not p.find("strike") and not p.find("s") and not "redação revogada" in p.get_text().lower() and not "nossas redes sociais" in p.get_text().lower():
+                paragrafos_filtrados.append(p)
         
-        Contexto:
-        {context}
+        for texto in paragrafos_filtrados:
+            paragrafo = texto.get_text()
+            texto_limpo = re.sub(r'\s+', ' ', paragrafo.replace("\n", " ")).strip()
+            if texto_limpo and "(VETADO)" not in texto_limpo:
+                textoRetorno += "\n"+texto_limpo
         
-        Pergunta: {input}
+    else:
+        print(f"Erro ao acessar a página. Código de status: {requisicao.status_code}")
+    
+    return textoRetorno
+
+def extrairLinks(link, headers, tipoExtracao):
+    '''
+        Método retorna um array com os diferentes links encontrados, não retorna links repetidos.
+
+        tipos de extração:
+        1 - qualquer <a> presente na página
+        2 - os <a> dentro de listas <li>, considerando apenas as <li> mais internas. (Usado no código de normas)
+    '''
+
+    requisicao = requests.get(link, headers=headers)
+    print(requisicao)
+
+    linksRetorno = []
+
+    # Verificando se a requisição foi bem-sucedida
+    if requisicao.status_code == 200:
+        site = BeautifulSoup(requisicao.text, "html.parser")
+
+        if tipoExtracao == 1: 
+            links = site.find_all("a", href=True)
+            for link in links:
+                linksRetorno.append(link["href"])
         
-        Responda apenas com trechos do contexto acima, sem adicionar informações externas.
-        """
-    )
+        elif tipoExtracao == 2:
+            for li in site.find_all("li"):
+                if not li.find("li") and not li.find("ul"):
+                    link = li.find("a", href=True)
+                    if link and "http" in link["href"]:
+                        linksRetorno.append(link["href"])
 
-    # Recuperar documentos relevantes
-    retrieved_docs = retriever.invoke(pergunta)
-    print("Documentos recuperados:", [doc.page_content for doc in retrieved_docs])
+    else:
+        print(f"Erro ao acessar a página. Código de status: {requisicao.status_code}")
 
-    # Criando a cadeia que combina os documentos recuperados com o modelo de linguagem
-    documents_chain = create_stuff_documents_chain(llm, prompt)
-
-    # Criando a cadeia de recuperação (RAG)
-    retriever_chain = create_retrieval_chain(retriever, documents_chain)
-
-    # Fazendo a consulta
-    response = retriever_chain.invoke({"input": pergunta})
-
-    # Retornando a resposta correta (depende do formato de saída do modelo)
-    return response.get("answer", "Resposta não encontrada no contexto.")
-
+    return linksRetorno
 
 if __name__ == "__main__":
-    # Criar embeddings
-    embeddings = OllamaEmbeddings(model="llama3.2:latest")  # Verifique se este modelo está disponível no Ollama
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"}
 
-    # Criar um text splitter adequado
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=10)
+    link_lei_9492_protestos = "https://www.planalto.gov.br/ccivil_03/leis/l9492.htm"
+    link_codigo_normas = "https://www.tjsc.jus.br/web/codigo-de-normas/indice"
+    link_lei_8935_cartorios = "https://www.planalto.gov.br/ccivil_03/leis/l8935.htm"
 
-    # Texto de exemplo
-    texto = "Art. 91. O plantão, regulado pelo Conselho da Magistratura, será fiscalizado pela CorregedoriaGeral da Justiça. Art. 92. A escala de juízes e servidores que atuarão no plantão judiciário, e suas alterações, deverá ser cadastrada no sítio eletrônico da Corregedoria-Geral da Justiça pelo chefe de secretaria do foro da comarca-sede da região de plantão ou de cumprimento de mandado respectiva, até o dia 25 (vinte e cinco) do mês anterior ao qual se referir.(redação alterada por meio do Provimento n. 8, de 15 de fevereiro de 2023) § 1º A publicação do nome dos juízes de plantão será divulgada apenas 5 (cinco) dias antes do início do plantão. § 2º Cópia da portaria, com nomes e telefones dos juízes e dos servidores de plantão de cada região, deverá ser afixada nos fóruns, 5 (cinco) dias antes do início do plantão (redação alterada por meio do Provimento n. 8, de 15 de fevereiro de 2023) § 3º (redação revogada por meio do Provimento n. 8, de 15 de fevereiro de 2023)"
+    embeddings = HuggingFaceEmbeddings()
 
-    # Dividir o texto em pequenos chunks
-    split_documents = text_splitter.split_text(texto)
-    print(split_documents)
-    # Criar o banco de dados vetorial
+    text_splitter = RecursiveCharacterTextSplitter(
+    separators=["\n(?=Art\\.\s\d+)", "\n\n", ".", " "],  # Priorizando quebras antes de artigos
+    chunk_size=2000,  # Boa relação entre precisão e contexto
+    chunk_overlap=200  # Mantendo uma sobreposição para continuidade do sentido
+    )
+
+    links = extrairLinks(link_codigo_normas, headers, 2)
+
+    vectorstore = None
+    textos = []
+    for link in links[:5]:
+        texto = extrairTexto(link, headers)
+        if texto.strip():  # Evita adicionar textos vazios
+            split_documents = text_splitter.split_text(texto)
+            textos.extend(split_documents)
+    
     vectorstore = FAISS.from_texts(texts=split_documents, embedding=embeddings)
-    faiss.from_documents(embeddings, split_documents)
 
-    # Salvar o banco de dados vetorial localmente
-    vectorstore.save_local("DadosVetoriais2")
-    print("Banco vetorial atualizado e salvo!")
+    llm = OllamaLLM(model="llama3.2:latest")
 
-    # Carregar os dados do banco vetorial FAISS
-    vectorstore = FAISS.load_local("DadosVetoriais2", embeddings, allow_dangerous_deserialization=True)
-    retriever = vectorstore.as_retriever()
+    chain = RetrievalQA.from_chain_type(
+        llm,
+        retriever=vectorstore.as_retriever()
+    )
 
-    # Fazer uma pergunta
-    resposta = perguntar("A publicação do nome dos juízes de plantão será divulgada em quantos dias antes do início do plantão? Em qual Art do código de normas consta essa informação?", retriever)
-    print(resposta)
+    question = "É responsabilidade do juiz a fiscalização da correta alimentação do sistema informatizado disponibilizado pelo Poder Judiciário?"
+    result = chain.invoke({"query": question})
+
+    print(result['result'])

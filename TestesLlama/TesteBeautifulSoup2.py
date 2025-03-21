@@ -2,23 +2,17 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import os
-import ollama
-#from langchain.embeddings import Embeddings
-from langchain_ollama import OllamaEmbeddings # transforma em embeddings cada chank
+from langchain.chains import RetrievalQA
+from langchain_ollama.llms import OllamaLLM
 from langchain_community.vectorstores import FAISS # armazena em um banco de dados vetorial
 from langchain_text_splitters import RecursiveCharacterTextSplitter # quebra o texto em pequenos chanks
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 os.environ['USER_AGENT'] = 'myagent'
-
-"""
-class Document:
-    def __init__(self, page_content):
-        self.page_content = page_content
-"""
 
 def extrairTexto(link, headers):
     requisicao = requests.get(link, headers=headers)
-    print(requisicao)
+    #print(requisicao)
 
     textoRetorno = ""
 
@@ -54,7 +48,7 @@ def extrairLinks(link, headers, tipoExtracao):
     '''
 
     requisicao = requests.get(link, headers=headers)
-    print(requisicao)
+    #print(requisicao)
 
     linksRetorno = []
 
@@ -79,42 +73,60 @@ def extrairLinks(link, headers, tipoExtracao):
 
     return linksRetorno
 
-if __name__ == "__main__":
+def adicionarTextoAoBancoVetorial(vectorstore, texto, text_splitter, embeddings):
+    split_documents = text_splitter.split_text(texto)
+    
+    if vectorstore:
+        vectorstore.add_texts(split_documents)
+    else:
+        vectorstore = FAISS.from_texts(texts=split_documents, embedding=embeddings)
+
+    return vectorstore
+
+def gerarBaseDados():
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"}
 
     link_lei_9492_protestos = "https://www.planalto.gov.br/ccivil_03/leis/l9492.htm"
     link_codigo_normas = "https://www.tjsc.jus.br/web/codigo-de-normas/indice"
     link_lei_8935_cartorios = "https://www.planalto.gov.br/ccivil_03/leis/l8935.htm"
 
-     # Criar embeddings
-    #embeddings = OllamaEmbeddings(model="llama3.2:latest") 
-    #embeddings = OllamaEmbeddings(model="mxbai-embed-large")
     embeddings = HuggingFaceEmbeddings()
+    #embeddings = OllamaEmbeddings(model="llama3.2:latest")
 
     text_splitter = RecursiveCharacterTextSplitter(
-    separators=["\n(?=Art\\.\s\d+)", "\n\n", ".", " "],  # Priorizando quebras antes de artigos
-    chunk_size=2000,  # Boa relação entre precisão e contexto
-    chunk_overlap=200  # Mantendo uma sobreposição para continuidade do sentido
+        separators=["\n(?=Art\\.\s\d+)", "\n\n", ".", " "],  # Priorizando quebras antes de artigos
+        chunk_size=1000,  # Boa relação entre precisão e contexto
+        chunk_overlap=200  # Mantendo uma sobreposição para continuidade do sentido
     )
 
-    links = extrairLinks(link_codigo_normas, headers, 2)
-
     vectorstore = None
-    textos = []
-    for link in links[:5]:
-        texto = extrairTexto(link, headers)
-        if texto.strip():  # Evita adicionar textos vazios
-            split_documents = text_splitter.split_text(texto)
-            textos.extend(split_documents)
-            """
-            if vectorstore:
-                vectorstore.add_texts(split_documents)
-            else:
-                vectorstore = FAISS.from_texts(texts=split_documents, embedding=embeddings)
-            """
-    
-    vectorstore = FAISS.from_texts(texts=split_documents, embedding=embeddings)
 
-    vectorstore.save_local("DadosVetoriais")
-    print(textos)
-    print("Banco vetorial atualizado e salvo!")
+# ====================================== Código de Normas =======================================
+
+    links = extrairLinks(link_codigo_normas, headers, 2)
+    for link in links:
+        texto = extrairTexto(link, headers)
+        if texto.strip():
+            vectorstore = adicionarTextoAoBancoVetorial(vectorstore, texto, text_splitter, embeddings)
+    print("Texto código de normas extraído e adicionado ao banco vetorial")
+
+# ====================================== Lei de protestos ======================================
+
+    texto = extrairTexto(link_lei_9492_protestos, headers)
+    if texto.strip():
+        vectorstore = adicionarTextoAoBancoVetorial(vectorstore, texto, text_splitter, embeddings)
+    print("Texto lei 9492 (protestos) extraído e adicionado ao banco vetorial")
+
+# ====================================== Lei dos cartórios ======================================
+
+    texto = extrairTexto(link_lei_8935_cartorios, headers)
+    if texto.strip():
+        vectorstore = adicionarTextoAoBancoVetorial(vectorstore, texto, text_splitter, embeddings)
+    print("Texto lei 8935 (cartorios) extraído e adicionado ao banco vetorial")
+
+
+    vectorstore.save_local("bd_HuggingFace")
+    print("Banco vetorial salvo!")
+
+if __name__ == "__main__":
+    gerarBaseDados()

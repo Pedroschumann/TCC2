@@ -7,7 +7,7 @@ Resumo das principais características do projeto:
         - python -m venv venv (Isso vai criar o ambiente virtual e a pasta "vend" na hierarquia do projeto com todas as bibliotecas)
     -> Entrar na máquina virtual:
         .\venv\Scripts\Activate
-    -> Caso dê erro pra rodar o comando acima, rodar o seguinte comando:
+    -> Caso dê erro pra rodar o comando acima, rodar o seguinte comando: 
         Set-ExecutionPolicy Unrestricted -Scope Process
 
     - pip install ollama
@@ -17,6 +17,9 @@ Resumo das principais características do projeto:
     - pip install beautifulsoup4
     - pip install faiss-cpu
     - pip install -U langchain langchain-ollama
+    - pip install langchain_huggingface
+
+    - pip install flask
 
 
 ==> Utilização da LLM llama3.2:
@@ -45,9 +48,6 @@ Resumo das principais características do projeto:
     - site principal: https://www.langchain.com/
 
 
-==> groq
-
-
 ==> Como executar:
     - rodar no cmd: ollama run llama3.2
     - rodar a classe ChatBot.py
@@ -68,3 +68,10 @@ Resumo das principais características do projeto:
     - gte-Qwen2-7B-instruct -> https://huggingface.co/Alibaba-NLP/gte-Qwen2-7B-instruct
     - mxbai-incorporar-grande -> https://ollama.com/library/mxbai-embed-large
         - ollama pull mxbai-embed-large
+
+
+
+Perguntas testadas:
+-> A publicação do nome dos juízes de plantão será divulgada em quantos dias antes do início do plantão? Em qual Art do código de normas consta essa informação?
+-> É responsabilidade do juiz a fiscalização da correta alimentação do sistema informatizado disponibilizado pelo Poder Judiciário? Qual artigo menciona isso?
+-> andados de registro e de averbação deverão ser encaminhados às serventias extrajudiciais de que forma?
