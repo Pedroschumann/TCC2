@@ -3,18 +3,20 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain_ollama import OllamaLLM
 from langchain_ollama import OllamaEmbeddings  # Transforma os textos em embeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 #from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 
 # Carregar embeddings do modelo
-embeddings = OllamaEmbeddings(model="llama3.2:latest") #llama3.2:latest
+#embeddings = OllamaEmbeddings(model="llama3.2:latest") #llama3.2:latest
+embeddings = HuggingFaceEmbeddings()
 
 # Recuperar os dados do banco vetorial FAISS
 vectorstore = FAISS.load_local("DadosVetoriais", embeddings, allow_dangerous_deserialization=True)
 retriever = vectorstore.as_retriever()
 
 def perguntar(pergunta, retriever):
-    llm = OllamaLLM(model="llama3.2:latest", temperature=0.3)
+    llm = OllamaLLM(model="llama3.2:latest", temperature=0.2)
 
     # Prompt que direciona a LLM a usar apenas o contexto
     prompt = ChatPromptTemplate.from_template(
